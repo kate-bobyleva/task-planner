@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Недельный планировщик задач</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="header-top">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <div>
+            <h1>Недельный планировщик</h1>
+            <p id="week-range">Текущая неделя</p>
+          </div>
+        </div>
+
+        <nav class="week-nav" aria-label="Переключение недель">
+          <button id="prev-week" class="icon-button" type="button" aria-label="Предыдущая неделя">&lt;</button>
+          <button id="next-week" class="icon-button" type="button" aria-label="Следующая неделя">&gt;</button>
+          <button id="emotion-stats-button" class="ghost-button" type="button">Статистика эмоций</button>
+        </nav>
+      </div>
+
+      <form class="quick-add" aria-label="Быстрое добавление задачи">
+        <label class="sr-only" for="task-title">Новая задача</label>
+        <div class="quick-add-main">
+          <input id="task-title" class="task-input" type="text" placeholder="Добавить задачу" aria-describedby="task-title-warning">
+          <p id="task-title-warning" class="quick-add-warning" hidden></p>
+        </div>
+
+        <label class="sr-only" for="task-date">Дата</label>
+        <input id="task-date" type="date">
+
+        <label class="sr-only" for="task-time">Время суток</label>
+        <select id="task-time">
+          <option value="morning">Утро</option>
+          <option value="afternoon">День</option>
+          <option value="evening">Вечер</option>
+        </select>
+
+        <label class="priority-toggle">
+          <input id="task-priority" type="checkbox">
+          <span class="round-check" aria-hidden="true"></span>
+          <span>Высокий приоритет</span>
+        </label>
+
+        <label class="sr-only" for="task-project">Категория или проект</label>
+        <input id="task-project" type="text" placeholder="#проект">
+
+        <button id="quick-add-button" class="primary-button" type="submit">Добавить</button>
+      </form>
+    </header>
+
+    <main class="main-grid">
+      <aside class="sidebar-column" aria-label="Боковая панель планировщика">
+        <section class="panel goals-panel" aria-labelledby="goals-title">
+          <div class="panel-header">
+            <h2 id="goals-title">Цели месяца</h2>
+            <span id="goals-count" class="muted-count">0</span>
+          </div>
+
+          <form id="month-goal-form" class="goal-form" aria-label="Добавление цели месяца">
+            <label class="sr-only" for="month-goal-input">Новая цель</label>
+            <input id="month-goal-input" type="text" placeholder="Добавить цель месяца" maxlength="255">
+            <button type="submit" aria-label="Добавить цель">+</button>
+          </form>
+
+          <ul id="month-goals-list" class="goal-list" aria-live="polite"></ul>
+        </section>
+
+        <section class="panel inbox-panel" aria-labelledby="inbox-title">
+          <div class="panel-header">
+            <h2 id="inbox-title">Входящие</h2>
+            <span id="inbox-count" class="muted-count">0</span>
+          </div>
+
+          <ul id="inbox-list" class="inbox-list" aria-live="polite"></ul>
+        </section>
+      </aside>
+
+      <section class="planner-panel" aria-labelledby="planner-title">
+        <div class="panel-header planner-heading">
+          <h2 id="planner-title">План недели</h2>
+          <span id="week-status" class="week-status">0 задач · 0%</span>
+        </div>
+
+        <div id="week-grid" class="week-grid" aria-live="polite">
+          <article class="day-column" data-day-index="0">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Понедельник</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column" data-day-index="1">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Вторник</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column" data-day-index="2">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Среда</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column" data-day-index="3">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Четверг</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column" data-day-index="4">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Пятница</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column weekend" data-day-index="5">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Суббота</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+
+          <article class="day-column weekend" data-day-index="6">
+            <header class="day-header">
+              <div>
+                <span class="day-name" data-day-title>Воскресенье</span>
+                <strong data-day-date></strong>
+              </div>
+              <span class="progress-pill" data-day-progress>0%</span>
+            </header>
+
+            <section class="time-block" data-time-block="morning">
+              <h3>Утро</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="afternoon">
+              <h3>День</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <section class="time-block" data-time-block="evening">
+              <h3>Вечер</h3>
+              <ul class="task-list"></ul>
+            </section>
+
+            <footer class="mood-slot">Трекер состояния</footer>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <nav class="mobile-tabbar" aria-label="Нижнее меню">
+    <button type="button">Цели</button>
+    <button class="active" type="button">План</button>
+    <button type="button">Входящие</button>
+    <button type="button">Статистика</button>
+  </nav>
+
+  <script src="script.js"></script>
+</body>
+</html>

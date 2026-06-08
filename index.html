@@ -75,7 +75,10 @@
         <section class="panel inbox-panel" data-mobile-screen="inbox" aria-labelledby="inbox-title">
           <div class="panel-header">
             <h2 id="inbox-title">Входящие</h2>
-            <span id="inbox-count" class="muted-count">0</span>
+            <div class="inbox-actions">
+              <span id="inbox-count" class="muted-count">0</span>
+              <button id="clear-inbox-button" class="clear-inbox-button" type="button">Очистить входящие</button>
+            </div>
           </div>
 
           <ul id="inbox-list" class="inbox-list" aria-live="polite"></ul>

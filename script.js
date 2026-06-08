@@ -5,6 +5,15 @@
   const VALID_TIME_BLOCKS = ["morning", "afternoon", "evening"];
   const MOBILE_QUERY = "(max-width: 767px)";
   const DESKTOP_QUERY = "(min-width: 768px)";
+  const MAX_DAY_SUMMARY_LENGTH = 150;
+  const MOOD_OPTIONS = [
+    { value: "joy", label: "Радость", emoji: "😀" },
+    { value: "calm", label: "Спокойствие", emoji: "🙂" },
+    { value: "neutral", label: "Нейтрально", emoji: "😐" },
+    { value: "anxiety", label: "Тревога", emoji: "😟" },
+    { value: "tired", label: "Усталость", emoji: "😫" },
+    { value: "irritation", label: "Раздражение", emoji: "😡" },
+  ];
 
   let appState = createEmptyState();
   let currentWeekStart = getStartOfWeek(new Date());
@@ -24,6 +33,10 @@
 
   const rangeFormatter = new Intl.DateTimeFormat("ru-RU", {
     day: "numeric",
+    month: "long",
+  });
+
+  const monthNameFormatter = new Intl.DateTimeFormat("ru-RU", {
     month: "long",
   });
 
@@ -87,10 +100,32 @@
       tasks: Array.isArray(candidateState.tasks)
         ? candidateState.tasks.map(normalizeTask)
         : baseState.tasks,
-      dayMetrics:
-        candidateState.dayMetrics && typeof candidateState.dayMetrics === "object"
-          ? candidateState.dayMetrics
-          : baseState.dayMetrics,
+      dayMetrics: normalizeDayMetrics(candidateState.dayMetrics),
+    };
+  }
+
+  function normalizeDayMetrics(dayMetrics) {
+    if (!dayMetrics || typeof dayMetrics !== "object") {
+      return {};
+    }
+
+    return Object.entries(dayMetrics).reduce((metrics, [dateKey, metric]) => {
+      metrics[dateKey] = normalizeDayMetric(metric);
+      return metrics;
+    }, {});
+  }
+
+  function normalizeDayMetric(metric) {
+    const energy = Number(metric?.energy ?? 0);
+    const stress = Number(metric?.stress ?? 0);
+    const mood = MOOD_OPTIONS.some((option) => option.value === metric?.mood) ? metric.mood : "";
+    const summary = String(metric?.summary || "").slice(0, MAX_DAY_SUMMARY_LENGTH);
+
+    return {
+      energy: clampMetricValue(energy),
+      stress: clampMetricValue(stress),
+      mood,
+      summary,
     };
   }
 
@@ -243,6 +278,14 @@
     }
 
     return "normal";
+  }
+
+  function clampMetricValue(value) {
+    if (!Number.isFinite(value)) {
+      return 0;
+    }
+
+    return Math.min(7, Math.max(0, Math.round(value)));
   }
 
   function getProgressForDate(date) {
@@ -412,6 +455,7 @@
   function renderInboxTasks() {
     const inboxList = document.querySelector("#inbox-list");
     const inboxCount = document.querySelector("#inbox-count");
+    const clearInboxButton = document.querySelector("#clear-inbox-button");
 
     if (!inboxList) {
       return;
@@ -426,6 +470,10 @@
 
     if (inboxCount) {
       inboxCount.textContent = String(inboxTasks.length);
+    }
+
+    if (clearInboxButton) {
+      clearInboxButton.disabled = inboxTasks.length === 0;
     }
   }
 
@@ -450,6 +498,63 @@
         timeBlock.append(createTaskCard(task, "task-item"));
       });
     });
+  }
+
+  function renderDayMetricForms() {
+    document.querySelectorAll("[data-day-index]").forEach((column) => {
+      const dateKey = column.dataset.date;
+      const moodSlot = column.querySelector(".mood-slot");
+
+      if (!dateKey || !moodSlot) {
+        return;
+      }
+
+      const metric = normalizeDayMetric(appState.dayMetrics[dateKey]);
+      moodSlot.textContent = "";
+      moodSlot.append(createDayMetricForm(dateKey, metric));
+    });
+  }
+
+  function createDayMetricForm(dateKey, metric) {
+    const form = document.createElement("form");
+    form.className = "day-metric-form";
+    form.dataset.metricDate = dateKey;
+
+    form.innerHTML = `
+      <label>
+        <span>Энергия</span>
+        <input name="energy" type="number" min="0" max="7" value="${metric.energy}" aria-label="Энергия от 0 до 7">
+      </label>
+      <label>
+        <span>Стресс</span>
+        <input name="stress" type="number" min="0" max="7" value="${metric.stress}" aria-label="Стресс от 0 до 7">
+      </label>
+      <label>
+        <span>Настроение</span>
+        <select name="mood" aria-label="Настроение дня">
+          <option value="">Нет данных</option>
+          ${MOOD_OPTIONS.map((option) => `
+            <option value="${option.value}" ${option.value === metric.mood ? "selected" : ""}>
+              ${option.emoji} ${option.label}
+            </option>
+          `).join("")}
+        </select>
+      </label>
+      <label>
+        <span>Итог</span>
+        <input name="summary" type="text" maxlength="${MAX_DAY_SUMMARY_LENGTH}" value="${escapeAttribute(metric.summary)}" placeholder="Короткий итог дня">
+      </label>
+    `;
+
+    return form;
+  }
+
+  function escapeAttribute(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("\"", "&quot;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;");
   }
 
   function createTaskCard(task, baseClassName) {
@@ -519,9 +624,11 @@
     renderMonthGoals();
     renderInboxTasks();
     renderWeekTasks();
+    renderDayMetricForms();
     renderMobileDaySlider();
     updateTransferWeekButton();
     applyMobileTab(activeMobileTab);
+    renderEmotionStatsViews();
   }
 
   function updateTransferWeekButton() {
@@ -557,6 +664,13 @@
     exposeState();
     saveState();
     renderMonthGoals();
+  }
+
+  function clearInboxTasks() {
+    appState.tasks = appState.tasks.filter((task) => task.timeBlock !== "inbox");
+    exposeState();
+    saveState();
+    renderApp();
   }
 
   function toggleTaskStatus(taskId) {
@@ -860,6 +974,62 @@
     });
   }
 
+  function bindClearInbox() {
+    const clearInboxButton = document.querySelector("#clear-inbox-button");
+
+    clearInboxButton?.addEventListener("click", clearInboxTasks);
+  }
+
+  function bindDayMetricForms() {
+    document.addEventListener("input", (event) => {
+      const form = event.target.closest(".day-metric-form");
+
+      if (!form) {
+        return;
+      }
+
+      saveDayMetricForm(form);
+    });
+
+    document.addEventListener("change", (event) => {
+      const form = event.target.closest(".day-metric-form");
+
+      if (!form) {
+        return;
+      }
+
+      saveDayMetricForm(form);
+    });
+  }
+
+  function saveDayMetricForm(form) {
+    const dateKey = form.dataset.metricDate;
+
+    if (!dateKey) {
+      return;
+    }
+
+    const summaryInput = form.elements.summary;
+    const summary = String(summaryInput.value || "").slice(0, MAX_DAY_SUMMARY_LENGTH);
+
+    if (summaryInput.value !== summary) {
+      summaryInput.value = summary;
+    }
+
+    appState.dayMetrics[dateKey] = {
+      energy: clampMetricValue(Number(form.elements.energy.value)),
+      stress: clampMetricValue(Number(form.elements.stress.value)),
+      mood: MOOD_OPTIONS.some((option) => option.value === form.elements.mood.value)
+        ? form.elements.mood.value
+        : "",
+      summary,
+    };
+
+    exposeState();
+    saveState();
+    renderEmotionStatsViews();
+  }
+
   function applyMobileTab(tabName) {
     activeMobileTab = tabName;
     document.body.dataset.mobileTab = tabName;
@@ -873,8 +1043,15 @@
     document.querySelectorAll("[data-mobile-tab]").forEach((button) => {
       button.addEventListener("click", () => {
         applyMobileTab(button.dataset.mobileTab);
+        renderEmotionStatsViews();
       });
     });
+  }
+
+  function bindEmotionStats() {
+    const statsButton = document.querySelector("#emotion-stats-button");
+
+    statsButton?.addEventListener("click", openEmotionStats);
   }
 
   function bindMobileTaskMenu() {
@@ -1004,6 +1181,152 @@
     });
   }
 
+  function openEmotionStats() {
+    if (isMobileViewport()) {
+      applyMobileTab("stats");
+      renderEmotionStatsViews();
+      return;
+    }
+
+    const modal = ensureEmotionStatsModal();
+    renderEmotionStats(modal.querySelector(".emotion-stats-content"));
+    modal.hidden = false;
+  }
+
+  function ensureEmotionStatsModal() {
+    let modal = document.querySelector(".emotion-stats-modal");
+
+    if (modal) {
+      return modal;
+    }
+
+    modal = document.createElement("div");
+    modal.className = "emotion-stats-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="emotion-stats-dialog" role="dialog" aria-modal="true" aria-labelledby="emotion-stats-heading">
+        <div class="emotion-stats-header">
+          <div>
+            <h2 id="emotion-stats-heading">Статистика эмоций</h2>
+            <p>Годовая матрица настроения</p>
+          </div>
+          <button class="emotion-stats-close" type="button" aria-label="Закрыть">×</button>
+        </div>
+        <div class="emotion-stats-content"></div>
+      </div>
+    `;
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal || event.target.closest(".emotion-stats-close")) {
+        modal.hidden = true;
+      }
+    });
+
+    document.body.append(modal);
+    return modal;
+  }
+
+  function renderEmotionStatsViews() {
+    const mobileStatsPanel = document.querySelector(".mobile-stats-panel");
+
+    if (mobileStatsPanel) {
+      let content = mobileStatsPanel.querySelector(".emotion-stats-content");
+
+      if (!content) {
+        content = document.createElement("div");
+        content.className = "emotion-stats-content";
+        mobileStatsPanel.append(content);
+      }
+
+      renderEmotionStats(content);
+    }
+
+    const openedModalContent = document.querySelector(".emotion-stats-modal:not([hidden]) .emotion-stats-content");
+
+    if (openedModalContent) {
+      renderEmotionStats(openedModalContent);
+    }
+  }
+
+  function renderEmotionStats(container) {
+    if (!container) {
+      return;
+    }
+
+    const year = new Date().getFullYear();
+    container.textContent = "";
+
+    const statsTable = document.createElement("div");
+    const header = document.createElement("div");
+    const matrix = document.createElement("div");
+
+    statsTable.className = "emotion-stats-table";
+    header.className = "emotion-days-header";
+    matrix.className = "emotion-matrix";
+
+    header.append(createMonthLabelCell(""));
+
+    for (let dayNumber = 1; dayNumber <= 31; dayNumber += 1) {
+      const dayCell = document.createElement("span");
+      dayCell.className = "emotion-day-number";
+      dayCell.textContent = String(dayNumber);
+      header.append(dayCell);
+    }
+
+    for (let monthIndex = 0; monthIndex < 12; monthIndex += 1) {
+      const row = document.createElement("div");
+      const daysInMonth = getDaysInMonth(year, monthIndex);
+
+      row.className = "emotion-month-row";
+      row.append(createMonthLabelCell(capitalize(monthNameFormatter.format(new Date(year, monthIndex, 1)))));
+
+      for (let dayNumber = 1; dayNumber <= 31; dayNumber += 1) {
+        row.append(
+          dayNumber <= daysInMonth
+            ? createEmotionCell(new Date(year, monthIndex, dayNumber))
+            : createEmotionCell(null),
+        );
+      }
+
+      matrix.append(row);
+    }
+
+    statsTable.append(header, matrix);
+    container.append(statsTable);
+  }
+
+  function createMonthLabelCell(label) {
+    const cell = document.createElement("span");
+    cell.className = "emotion-month-label";
+    cell.textContent = label;
+    return cell;
+  }
+
+  function getDaysInMonth(year, monthIndex) {
+    return new Date(year, monthIndex + 1, 0).getDate();
+  }
+
+  function createEmotionCell(date) {
+    const cell = document.createElement("span");
+
+    if (!date) {
+      cell.className = "emotion-cell empty";
+      return cell;
+    }
+
+    const dateKey = formatDateKey(date);
+    const metric = appState.dayMetrics[dateKey];
+    const mood = MOOD_OPTIONS.find((option) => option.value === metric?.mood);
+
+    cell.className = mood ? "emotion-cell has-mood" : "emotion-cell no-data";
+    cell.title = mood
+      ? `${dateKey}: ${mood.label}`
+      : `${dateKey}: нет данных`;
+    cell.textContent = mood ? mood.emoji : "";
+
+    return cell;
+  }
+
   function closeTaskMoveModal() {
     const modal = document.querySelector(".task-move-modal");
 
@@ -1048,10 +1371,13 @@
     bindTransferWeekButton();
     bindQuickAdd();
     bindMonthGoals();
+    bindClearInbox();
     bindDesktopDragAndDrop();
     bindTaskToggles();
     bindMobileTabs();
+    bindEmotionStats();
     bindMobileTaskMenu();
+    bindDayMetricForms();
     bindViewportUpdates();
     startDateChangeWatcher();
     renderApp();
@@ -1063,6 +1389,7 @@
   window.createTask = createTask;
   window.addMonthGoal = addMonthGoal;
   window.deleteMonthGoal = deleteMonthGoal;
+  window.clearInboxTasks = clearInboxTasks;
   window.toggleTaskStatus = toggleTaskStatus;
   window.moveTask = moveTask;
 

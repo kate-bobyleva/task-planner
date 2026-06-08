@@ -279,10 +279,10 @@ ul {
 
 .task-toggle {
   position: relative;
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  min-height: 44px;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  min-height: 28px;
   border: 0;
   background: transparent;
 }
@@ -290,8 +290,8 @@ ul {
 .task-toggle::before {
   content: "";
   position: absolute;
-  top: 13px;
-  left: 13px;
+  top: 5px;
+  left: 5px;
   width: 18px;
   height: 18px;
   border: 1.5px solid #b9b9b9;
@@ -307,8 +307,8 @@ ul {
 .task-toggle[aria-pressed="true"]::after {
   content: "";
   position: absolute;
-  top: 18px;
-  left: 18px;
+  top: 10px;
+  left: 10px;
   width: 8px;
   height: 5px;
   border-bottom: 2px solid #ffffff;
@@ -404,6 +404,34 @@ ul {
   font-size: 13px;
 }
 
+.inbox-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.clear-inbox-button {
+  min-width: auto;
+  min-height: 30px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: var(--accent-dark);
+  background: var(--accent-tint);
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.clear-inbox-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  color: var(--muted);
+  background: var(--surface);
+}
+
 .goal-list {
   display: grid;
   gap: 4px;
@@ -479,7 +507,7 @@ ul {
 
 .day-column {
   display: grid;
-  grid-template-rows: auto repeat(3, minmax(0, 1fr)) 50px;
+  grid-template-rows: auto repeat(3, minmax(0, 1fr)) minmax(88px, auto);
   min-width: 0;
   min-height: 0;
   background: #ffffff;
@@ -503,15 +531,15 @@ ul {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  min-height: 58px;
-  padding: 10px;
+  min-height: 52px;
+  padding: 8px;
   border-bottom: 1px solid var(--line);
 }
 
 .day-name {
   display: block;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -519,17 +547,17 @@ ul {
 .day-header strong {
   display: block;
   margin-top: 2px;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 650;
 }
 
 .progress-pill {
   flex: 0 0 auto;
-  padding: 4px 7px;
+  padding: 3px 6px;
   border-radius: 999px;
   color: var(--accent-dark);
   background: var(--accent-soft);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
 }
 
@@ -537,14 +565,14 @@ ul {
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
-  padding: 10px;
+  padding: 7px;
   border-bottom: 1px solid var(--line);
 }
 
 .time-block h3 {
-  margin-bottom: 9px;
+  margin-bottom: 5px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 650;
   text-transform: uppercase;
 }
@@ -562,7 +590,7 @@ ul {
 
 .task-list {
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 
 .task-item,
@@ -571,7 +599,7 @@ ul {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
-  gap: 8px;
+  gap: 5px;
 }
 
 .task-item[draggable="true"],
@@ -587,35 +615,36 @@ ul {
 .task-title-row {
   display: flex;
   align-items: baseline;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .task-item {
-  padding: 8px;
+  padding: 5px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 7px;
 }
 
 .task-item p,
 .inbox-card p {
   overflow-wrap: anywhere;
-  font-size: 14px;
+  font-size: 12px;
+  line-height: 1.25;
 }
 
 .transfer-icon {
   flex: 0 0 auto;
   color: var(--accent-dark);
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .task-item span:not(.task-check),
 .inbox-card span:not(.task-check) {
   display: inline-block;
-  margin-top: 4px;
+  margin-top: 2px;
   color: var(--accent-dark);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .task-item .task-category,
@@ -627,13 +656,13 @@ ul {
 .task-item .priority-marker {
   display: inline-flex;
   align-items: center;
-  min-height: 20px;
-  margin-top: 6px;
+  min-height: 18px;
+  margin-top: 4px;
   border-radius: 999px;
-  padding: 0 8px;
+  padding: 0 6px;
   color: #9b620d;
   background: var(--priority-soft);
-  font-size: 11px;
+  font-size: 9px;
   font-weight: 650;
 }
 
@@ -671,15 +700,53 @@ ul {
 }
 
 .mood-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 50px;
-  padding: 10px;
+  min-height: 88px;
+  padding: 6px;
   color: var(--subtle);
   background: #fcfcfc;
-  font-size: 12px;
-  text-align: center;
+  font-size: 11px;
+}
+
+.day-metric-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.day-metric-form label {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.day-metric-form span {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.day-metric-form input,
+.day-metric-form select {
+  width: 100%;
+  min-height: 26px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0 6px;
+  color: var(--text);
+  background: var(--surface);
+  font-size: 11px;
+}
+
+.day-metric-form select {
+  padding-right: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.day-metric-form label:last-child {
+  grid-column: 1 / -1;
 }
 
 .inbox-list {
@@ -811,6 +878,134 @@ ul {
   margin-top: 6px;
 }
 
+.emotion-stats-modal[hidden] {
+  display: none;
+}
+
+.emotion-stats-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: grid;
+  padding: 24px;
+  background: rgba(20, 40, 38, 0.35);
+}
+
+.emotion-stats-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 18px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(20, 56, 54, 0.2);
+  overflow: hidden;
+}
+
+.emotion-stats-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.emotion-stats-header h2 {
+  font-size: 20px;
+}
+
+.emotion-stats-header p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.emotion-stats-close {
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 24px;
+}
+
+.emotion-stats-content {
+  min-height: 0;
+  overflow: auto;
+}
+
+.emotion-stats-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.emotion-days-header,
+.emotion-month-row {
+  display: grid;
+  grid-template-columns: 96px repeat(31, 28px);
+  gap: 5px;
+  align-items: center;
+}
+
+.emotion-days-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 8px;
+  background: var(--surface);
+}
+
+.emotion-matrix {
+  display: grid;
+  gap: 7px;
+}
+
+.emotion-month-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  min-height: 28px;
+  display: flex;
+  align-items: center;
+  padding-right: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 650;
+  text-transform: capitalize;
+}
+
+.emotion-day-number {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+  text-align: center;
+}
+
+.emotion-cell {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 16px;
+}
+
+.emotion-cell.has-mood {
+  background: var(--accent-soft);
+}
+
+.emotion-cell.no-data::before {
+  content: "";
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #d8d8d8;
+}
+
+.emotion-cell.empty {
+  visibility: hidden;
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     padding: 18px;
@@ -928,6 +1123,15 @@ ul {
     overflow-y: auto;
   }
 
+  .inbox-actions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .clear-inbox-button {
+    min-height: 44px;
+  }
+
   body[data-mobile-tab="plan"] [data-mobile-screen="plan"] {
     display: grid;
   }
@@ -1023,7 +1227,54 @@ ul {
   }
 
   .mood-slot {
-    min-height: 48px;
+    min-height: 118px;
+  }
+
+  .day-metric-form input,
+  .day-metric-form select {
+    min-height: 32px;
+  }
+
+  .task-toggle {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .task-toggle::before {
+    top: 13px;
+    left: 13px;
+  }
+
+  .task-toggle[aria-pressed="true"]::after {
+    top: 18px;
+    left: 18px;
+  }
+
+  .mobile-stats-panel .emotion-stats-content {
+    padding-bottom: 16px;
+  }
+
+  .emotion-days-header,
+  .emotion-month-row {
+    grid-template-columns: 78px repeat(31, 26px);
+    gap: 5px;
+  }
+
+  .emotion-cell {
+    width: 26px;
+    height: 26px;
+    font-size: 15px;
+  }
+
+  .emotion-month-label {
+    min-height: 26px;
+    font-size: 11px;
+  }
+
+  .emotion-day-number {
+    font-size: 10px;
   }
 
   .mobile-tabbar {

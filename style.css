@@ -509,19 +509,6 @@ ul {
   gap: 8px;
 }
 
-.priority-marker {
-  display: inline-flex;
-  align-items: center;
-  min-height: 20px;
-  margin-top: 6px;
-  border-radius: 999px;
-  padding: 0 8px;
-  color: #9b620d;
-  background: var(--priority-soft);
-  font-size: 11px;
-  font-weight: 650;
-}
-
 .task-item {
   padding: 8px;
   border: 1px solid transparent;
@@ -540,6 +527,20 @@ ul {
   margin-top: 4px;
   color: var(--accent-dark);
   font-size: 12px;
+}
+
+.inbox-card .priority-marker,
+.task-item .priority-marker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  margin-top: 6px;
+  border-radius: 999px;
+  padding: 0 8px;
+  color: #9b620d;
+  background: var(--priority-soft);
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .task-item.high .task-check,

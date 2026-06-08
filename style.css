@@ -277,6 +277,45 @@ ul {
   background: #ffffff;
 }
 
+.task-toggle {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+}
+
+.task-toggle::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 13px;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid #b9b9b9;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.task-toggle[aria-pressed="true"]::before {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.task-toggle[aria-pressed="true"]::after {
+  content: "";
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 8px;
+  height: 5px;
+  border-bottom: 2px solid #ffffff;
+  border-left: 2px solid #ffffff;
+  transform: rotate(-45deg);
+}
+
 .priority-toggle input:checked + .round-check {
   border-color: var(--priority);
   box-shadow: inset 0 0 0 4px #ffffff;
@@ -509,6 +548,13 @@ ul {
   gap: 8px;
 }
 
+.task-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
 .task-item {
   padding: 8px;
   border: 1px solid transparent;
@@ -521,12 +567,24 @@ ul {
   font-size: 14px;
 }
 
+.transfer-icon {
+  flex: 0 0 auto;
+  color: var(--accent-dark);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .task-item span:not(.task-check),
 .inbox-card span:not(.task-check) {
   display: inline-block;
   margin-top: 4px;
   color: var(--accent-dark);
   font-size: 12px;
+}
+
+.task-item .task-category,
+.inbox-card .task-category {
+  color: var(--muted);
 }
 
 .inbox-card .priority-marker,
@@ -553,6 +611,27 @@ ul {
 .inbox-card.high {
   border-color: #f4d19b;
   background: var(--priority-soft);
+}
+
+.task-item.high .task-toggle,
+.inbox-card.high .task-toggle {
+  border: 0;
+  background: transparent;
+}
+
+.task-item.task-priority-high,
+.inbox-card.task-priority-high {
+  border-left: 3px solid var(--accent);
+}
+
+.task-item.completed,
+.inbox-card.completed {
+  opacity: 0.55;
+}
+
+.task-item.completed p,
+.inbox-card.completed p {
+  text-decoration: line-through;
 }
 
 .mood-slot {

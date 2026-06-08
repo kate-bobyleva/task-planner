@@ -31,10 +31,10 @@
 
   function createTask({
     text = "",
-    status = "active",
+    status = "pending",
     date = null,
     timeBlock = "inbox",
-    priority = false,
+    priority = "normal",
     category = "",
     deadline = null,
     isTransferred = false,
@@ -42,10 +42,10 @@
     return {
       id: createId(),
       text,
-      status,
+      status: normalizeStatus(status),
       date,
       timeBlock,
-      priority,
+      priority: normalizePriority(priority),
       category,
       deadline,
       isTransferred,
@@ -106,10 +106,10 @@
     return {
       id: task?.id || createId(),
       text: task?.text || "",
-      status: task?.status || "active",
+      status: normalizeStatus(task?.status),
       date,
       timeBlock: date ? normalizeTimeBlock(timeBlock) : "inbox",
-      priority: Boolean(task?.priority),
+      priority: normalizePriority(task?.priority),
       category: task?.category || "",
       deadline: task?.deadline || null,
       isTransferred: Boolean(task?.isTransferred),
@@ -215,19 +215,40 @@
     return getSelectedTimeBlock(rawTimeBlock);
   }
 
+  function normalizeStatus(rawStatus) {
+    if (rawStatus === "completed") {
+      return "completed";
+    }
+
+    return "pending";
+  }
+
+  function normalizePriority(rawPriority) {
+    if (rawPriority === "high" || rawPriority === true) {
+      return "high";
+    }
+
+    return "normal";
+  }
+
   function getProgressForDate(date) {
     const dateKey = formatDateKey(date);
-    const metric = appState.dayMetrics[dateKey];
+    const dayTasks = getTasksForDate(dateKey);
 
-    if (typeof metric === "number") {
-      return `${metric}%`;
+    if (!dayTasks.length) {
+      return "0%";
     }
 
-    if (metric && typeof metric.progress === "number") {
-      return `${metric.progress}%`;
-    }
+    const completedTasks = dayTasks.filter((task) => task.status === "completed");
+    const progress = Math.round((completedTasks.length / dayTasks.length) * 100);
 
-    return "0%";
+    return `${progress}%`;
+  }
+
+  function getTasksForDate(dateKey) {
+    return appState.tasks.filter(
+      (task) => task.date === dateKey && VALID_TIME_BLOCKS.includes(task.timeBlock),
+    );
   }
 
   function renderWeekHeaders() {
@@ -317,33 +338,7 @@
     inboxList.textContent = "";
 
     inboxTasks.forEach((task) => {
-      const taskCard = document.createElement("li");
-      const taskCheck = document.createElement("span");
-      const taskContent = document.createElement("div");
-      const taskText = document.createElement("p");
-
-      taskCard.className = task.priority ? "inbox-card high" : "inbox-card";
-      taskCheck.className = "task-check";
-      taskCheck.setAttribute("aria-hidden", "true");
-      taskText.textContent = task.text;
-
-      taskContent.append(taskText);
-
-      if (task.category) {
-        const categoryTag = document.createElement("span");
-        categoryTag.textContent = task.category;
-        taskContent.append(categoryTag);
-      }
-
-      if (task.priority) {
-        const priorityMarker = document.createElement("span");
-        priorityMarker.className = "priority-marker";
-        priorityMarker.textContent = "Высокий приоритет";
-        taskContent.append(priorityMarker);
-      }
-
-      taskCard.append(taskCheck, taskContent);
-      inboxList.append(taskCard);
+      inboxList.append(createTaskCard(task, "inbox-card"));
     });
 
     if (inboxCount) {
@@ -362,40 +357,63 @@
         taskList.textContent = "";
       });
 
-      appState.tasks
-        .filter((task) => task.date === date && VALID_TIME_BLOCKS.includes(task.timeBlock))
-        .forEach((task) => {
-          const timeBlock = column.querySelector(`[data-time-block="${task.timeBlock}"] .task-list`);
+      getTasksForDate(date).forEach((task) => {
+        const timeBlock = column.querySelector(`[data-time-block="${task.timeBlock}"] .task-list`);
 
-          if (!timeBlock) {
-            return;
-          }
+        if (!timeBlock) {
+          return;
+        }
 
-          timeBlock.append(createTaskListItem(task));
-        });
+        timeBlock.append(createTaskCard(task, "task-item"));
+      });
     });
   }
 
-  function createTaskListItem(task) {
+  function createTaskCard(task, baseClassName) {
     const taskItem = document.createElement("li");
-    const taskCheck = document.createElement("span");
+    const taskCheck = document.createElement("button");
     const taskContent = document.createElement("div");
+    const taskTitleRow = document.createElement("div");
     const taskText = document.createElement("p");
+    const classes = [baseClassName];
 
-    taskItem.className = task.priority ? "task-item high" : "task-item";
-    taskCheck.className = "task-check";
-    taskCheck.setAttribute("aria-hidden", "true");
+    if (task.priority === "high") {
+      classes.push("high", "task-priority-high");
+    }
+
+    if (task.status === "completed") {
+      classes.push("completed");
+    }
+
+    taskItem.className = classes.join(" ");
+    taskItem.dataset.taskId = task.id;
+    taskCheck.type = "button";
+    taskCheck.className = "task-check task-toggle";
+    taskCheck.setAttribute("aria-label", getTaskToggleLabel(task));
+    taskCheck.setAttribute("aria-pressed", String(task.status === "completed"));
     taskText.textContent = task.text;
 
-    taskContent.append(taskText);
+    taskTitleRow.className = "task-title-row";
+
+    if (task.isTransferred) {
+      const transferIcon = document.createElement("span");
+      transferIcon.className = "transfer-icon";
+      transferIcon.textContent = "↗";
+      transferIcon.setAttribute("aria-label", "Перенесенная задача");
+      taskTitleRow.append(transferIcon);
+    }
+
+    taskTitleRow.append(taskText);
+    taskContent.append(taskTitleRow);
 
     if (task.category) {
       const categoryTag = document.createElement("span");
+      categoryTag.className = "task-category";
       categoryTag.textContent = task.category;
       taskContent.append(categoryTag);
     }
 
-    if (task.priority) {
+    if (task.priority === "high") {
       const priorityMarker = document.createElement("span");
       priorityMarker.className = "priority-marker";
       priorityMarker.textContent = "Высокий приоритет";
@@ -404,6 +422,12 @@
 
     taskItem.append(taskCheck, taskContent);
     return taskItem;
+  }
+
+  function getTaskToggleLabel(task) {
+    return task.status === "completed"
+      ? `Вернуть задачу в работу: ${task.text}`
+      : `Отметить задачу выполненной: ${task.text}`;
   }
 
   function renderApp() {
@@ -433,6 +457,19 @@
     renderMonthGoals();
   }
 
+  function toggleTaskStatus(taskId) {
+    const task = appState.tasks.find((currentTask) => currentTask.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    task.status = task.status === "completed" ? "pending" : "completed";
+    exposeState();
+    saveState();
+    renderApp();
+  }
+
   function addTaskFromQuickAdd(form) {
     const textInput = form.querySelector("#task-title");
     const dateInput = form.querySelector("#task-date");
@@ -460,7 +497,7 @@
       text: normalizedText.text,
       date: selectedDate,
       timeBlock: selectedDate ? getSelectedTimeBlock(timeSelect.value) : "inbox",
-      priority: Boolean(priorityInput.checked),
+      priority: priorityInput.checked ? "high" : "normal",
       category: categoryInput.value.trim(),
     });
 
@@ -538,11 +575,30 @@
     });
   }
 
+  function bindTaskToggles() {
+    document.addEventListener("click", (event) => {
+      const toggleButton = event.target.closest(".task-toggle");
+
+      if (!toggleButton) {
+        return;
+      }
+
+      const taskCard = toggleButton.closest("[data-task-id]");
+
+      if (!taskCard) {
+        return;
+      }
+
+      toggleTaskStatus(taskCard.dataset.taskId);
+    });
+  }
+
   function initApp() {
     loadState();
     bindWeekNavigation();
     bindQuickAdd();
     bindMonthGoals();
+    bindTaskToggles();
     renderApp();
     logCurrentWeekRange();
   }
@@ -552,6 +608,7 @@
   window.createTask = createTask;
   window.addMonthGoal = addMonthGoal;
   window.deleteMonthGoal = deleteMonthGoal;
+  window.toggleTaskStatus = toggleTaskStatus;
 
   document.addEventListener("DOMContentLoaded", initApp);
 })();

@@ -3,9 +3,14 @@
   const WEEK_LENGTH = 7;
   const MAX_TEXT_LENGTH = 255;
   const VALID_TIME_BLOCKS = ["morning", "afternoon", "evening"];
+  const MOBILE_QUERY = "(max-width: 767px)";
+  const DESKTOP_QUERY = "(min-width: 768px)";
 
   let appState = createEmptyState();
   let currentWeekStart = getStartOfWeek(new Date());
+  let draggedTaskId = null;
+  let activeMobileTab = "plan";
+  let selectedMobileDayIndex = 0;
 
   const dayTitleFormatter = new Intl.DateTimeFormat("ru-RU", {
     weekday: "long",
@@ -183,6 +188,14 @@
     return text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  function isDesktopViewport() {
+    return window.matchMedia(DESKTOP_QUERY).matches;
+  }
+
+  function isMobileViewport() {
+    return window.matchMedia(MOBILE_QUERY).matches;
+  }
+
   function normalizeTaskText(text) {
     const trimmedText = text.trim();
 
@@ -294,6 +307,63 @@
     rangeElement.textContent = `${rangeFormatter.format(firstDate)} - ${rangeFormatter.format(lastDate)}`;
   }
 
+  function renderMobileDaySlider() {
+    const plannerPanel = document.querySelector(".planner-panel");
+    const weekGrid = document.querySelector("#week-grid");
+
+    if (!plannerPanel || !weekGrid) {
+      return;
+    }
+
+    let slider = plannerPanel.querySelector(".mobile-day-slider");
+
+    if (!slider) {
+      slider = document.createElement("nav");
+      slider.className = "mobile-day-slider";
+      slider.setAttribute("aria-label", "Выбор дня недели");
+      plannerPanel.insertBefore(slider, weekGrid);
+    }
+
+    const weekDates = getWeekDates(currentWeekStart);
+    slider.textContent = "";
+
+    weekDates.forEach((date, index) => {
+      const button = document.createElement("button");
+
+      button.type = "button";
+      button.dataset.mobileDayIndex = String(index);
+      button.className = index === selectedMobileDayIndex ? "active" : "";
+      button.textContent = `${capitalize(dayTitleFormatter.format(date)).slice(0, 2)} ${date.getDate()}`;
+      button.setAttribute("aria-label", `${capitalize(dayTitleFormatter.format(date))}, ${dayDateFormatter.format(date)}`);
+      button.addEventListener("click", () => {
+        selectedMobileDayIndex = index;
+        renderMobileDaySlider();
+        updateMobileDayVisibility();
+      });
+
+      slider.append(button);
+    });
+
+    updateMobileDayVisibility();
+  }
+
+  function updateMobileDayVisibility() {
+    document.querySelectorAll("[data-day-index]").forEach((column) => {
+      column.classList.toggle(
+        "mobile-active-day",
+        Number(column.dataset.dayIndex) === selectedMobileDayIndex,
+      );
+    });
+  }
+
+  function setDefaultMobileDayForCurrentWeek() {
+    const todayKey = formatDateKey(new Date());
+    const weekDates = getWeekDates(currentWeekStart).map(formatDateKey);
+    const todayIndex = weekDates.indexOf(todayKey);
+
+    selectedMobileDayIndex = todayIndex >= 0 ? todayIndex : 0;
+  }
+
   function renderMonthGoals() {
     const goalsList = document.querySelector("#month-goals-list");
     const goalsCount = document.querySelector("#goals-count");
@@ -387,6 +457,7 @@
 
     taskItem.className = classes.join(" ");
     taskItem.dataset.taskId = task.id;
+    taskItem.draggable = isDesktopViewport();
     taskCheck.type = "button";
     taskCheck.className = "task-check task-toggle";
     taskCheck.setAttribute("aria-label", getTaskToggleLabel(task));
@@ -435,6 +506,8 @@
     renderMonthGoals();
     renderInboxTasks();
     renderWeekTasks();
+    renderMobileDaySlider();
+    applyMobileTab(activeMobileTab);
   }
 
   function addMonthGoal(text) {
@@ -468,6 +541,119 @@
     exposeState();
     saveState();
     renderApp();
+  }
+
+  function moveTask(taskId, target) {
+    const task = appState.tasks.find((currentTask) => currentTask.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    task.date = target.date;
+    task.timeBlock = target.timeBlock;
+    exposeState();
+    saveState();
+    renderApp();
+  }
+
+  function getDropTargetData(element) {
+    const timeBlock = element.closest("[data-time-block]");
+
+    if (timeBlock) {
+      const dayColumn = timeBlock.closest("[data-day-index]");
+
+      if (!dayColumn?.dataset.date) {
+        return null;
+      }
+
+      return {
+        date: dayColumn.dataset.date,
+        timeBlock: normalizeTimeBlock(timeBlock.dataset.timeBlock),
+      };
+    }
+
+    if (element.closest(".inbox-panel") || element.closest("#inbox-list")) {
+      return {
+        date: null,
+        timeBlock: "inbox",
+      };
+    }
+
+    return null;
+  }
+
+  function bindDesktopDragAndDrop() {
+    document.addEventListener("dragstart", (event) => {
+      const taskCard = event.target.closest("[data-task-id]");
+
+      if (!taskCard || !isDesktopViewport()) {
+        event.preventDefault();
+        return;
+      }
+
+      draggedTaskId = taskCard.dataset.taskId;
+      taskCard.classList.add("dragging");
+      event.dataTransfer.effectAllowed = "move";
+      event.dataTransfer.setData("text/plain", draggedTaskId);
+    });
+
+    document.addEventListener("dragend", (event) => {
+      const taskCard = event.target.closest("[data-task-id]");
+
+      taskCard?.classList.remove("dragging");
+      draggedTaskId = null;
+      clearDropZoneHighlights();
+    });
+
+    document.addEventListener("dragover", (event) => {
+      const target = getDropTargetData(event.target);
+
+      if (!target || !isDesktopViewport()) {
+        return;
+      }
+
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      setDropZoneHighlight(event.target, true);
+    });
+
+    document.addEventListener("dragleave", (event) => {
+      setDropZoneHighlight(event.target, false);
+    });
+
+    document.addEventListener("drop", (event) => {
+      const target = getDropTargetData(event.target);
+
+      if (!target || !isDesktopViewport()) {
+        return;
+      }
+
+      event.preventDefault();
+
+      const taskId = event.dataTransfer.getData("text/plain") || draggedTaskId;
+      clearDropZoneHighlights();
+
+      if (taskId) {
+        moveTask(taskId, target);
+      }
+    });
+  }
+
+  function setDropZoneHighlight(element, shouldHighlight) {
+    const dropZone = element.closest("[data-time-block], .inbox-panel");
+
+    if (!dropZone) {
+      return;
+    }
+
+    dropZone.classList.toggle("drop-zone-active", shouldHighlight);
+  }
+
+  function clearDropZoneHighlights() {
+    document.querySelectorAll(".drop-zone-active").forEach((element) => {
+      element.classList.remove("drop-zone-active");
+    });
   }
 
   function addTaskFromQuickAdd(form) {
@@ -542,8 +728,8 @@
 
   function shiftWeek(direction) {
     currentWeekStart = addDays(currentWeekStart, direction * WEEK_LENGTH);
-    renderWeekHeaders();
-    renderWeekTasks();
+    setDefaultMobileDayForCurrentWeek();
+    renderApp();
     logCurrentWeekRange();
   }
 
@@ -575,6 +761,159 @@
     });
   }
 
+  function applyMobileTab(tabName) {
+    activeMobileTab = tabName;
+    document.body.dataset.mobileTab = tabName;
+
+    document.querySelectorAll("[data-mobile-tab]").forEach((button) => {
+      button.classList.toggle("active", button.dataset.mobileTab === tabName);
+    });
+  }
+
+  function bindMobileTabs() {
+    document.querySelectorAll("[data-mobile-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        applyMobileTab(button.dataset.mobileTab);
+      });
+    });
+  }
+
+  function bindMobileTaskMenu() {
+    document.addEventListener("touchstart", (event) => {
+      const taskCard = event.target.closest("[data-task-id]");
+
+      if (taskCard && isMobileViewport()) {
+        taskCard.draggable = false;
+      }
+    }, { passive: true });
+
+    document.addEventListener("touchmove", (event) => {
+      const taskCard = event.target.closest("[data-task-id]");
+
+      if (taskCard && isMobileViewport()) {
+        taskCard.draggable = false;
+      }
+    }, { passive: true });
+
+    document.addEventListener("click", (event) => {
+      const taskCard = event.target.closest("[data-task-id]");
+
+      if (
+        !taskCard ||
+        !isMobileViewport() ||
+        event.target.closest(".task-toggle") ||
+        event.target.closest(".task-move-modal")
+      ) {
+        return;
+      }
+
+      openTaskMoveModal(taskCard.dataset.taskId);
+    });
+  }
+
+  function openTaskMoveModal(taskId) {
+    const task = appState.tasks.find((currentTask) => currentTask.id === taskId);
+
+    if (!task) {
+      return;
+    }
+
+    const modal = ensureTaskMoveModal();
+    const form = modal.querySelector("#task-move-form");
+    const targetSelect = modal.querySelector("#task-move-target");
+    const timeSelect = modal.querySelector("#task-move-time");
+    const title = modal.querySelector("#task-move-title");
+
+    modal.dataset.taskId = taskId;
+    title.textContent = task.text;
+    renderMoveTargetOptions(targetSelect, task);
+    timeSelect.value = VALID_TIME_BLOCKS.includes(task.timeBlock) ? task.timeBlock : "morning";
+    timeSelect.disabled = task.timeBlock === "inbox";
+    modal.hidden = false;
+    targetSelect.focus();
+
+    form.onsubmit = (event) => {
+      event.preventDefault();
+      const targetValue = targetSelect.value;
+      const target =
+        targetValue === "inbox"
+          ? { date: null, timeBlock: "inbox" }
+          : { date: targetValue, timeBlock: getSelectedTimeBlock(timeSelect.value) };
+
+      moveTask(taskId, target);
+      closeTaskMoveModal();
+    };
+
+    targetSelect.onchange = () => {
+      timeSelect.disabled = targetSelect.value === "inbox";
+    };
+  }
+
+  function ensureTaskMoveModal() {
+    let modal = document.querySelector(".task-move-modal");
+
+    if (modal) {
+      return modal;
+    }
+
+    modal = document.createElement("div");
+    modal.className = "task-move-modal";
+    modal.hidden = true;
+    modal.innerHTML = `
+      <div class="task-move-dialog" role="dialog" aria-modal="true" aria-labelledby="task-move-heading">
+        <div class="task-move-header">
+          <div>
+            <h2 id="task-move-heading">Переместить задачу</h2>
+            <p id="task-move-title"></p>
+          </div>
+          <button class="task-move-close" type="button" aria-label="Закрыть">×</button>
+        </div>
+        <form id="task-move-form" class="task-move-form">
+          <label for="task-move-target">Куда переместить</label>
+          <select id="task-move-target"></select>
+          <label for="task-move-time">Блок времени</label>
+          <select id="task-move-time">
+            <option value="morning">Утро</option>
+            <option value="afternoon">День</option>
+            <option value="evening">Вечер</option>
+          </select>
+          <button class="primary-button" type="submit">Переместить</button>
+        </form>
+      </div>
+    `;
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal || event.target.closest(".task-move-close")) {
+        closeTaskMoveModal();
+      }
+    });
+
+    document.body.append(modal);
+    return modal;
+  }
+
+  function renderMoveTargetOptions(select, task) {
+    const weekDates = getWeekDates(currentWeekStart);
+
+    select.textContent = "";
+    select.append(new Option("Входящие", "inbox", task.timeBlock === "inbox", task.timeBlock === "inbox"));
+
+    weekDates.forEach((date) => {
+      const dateKey = formatDateKey(date);
+      const label = `${capitalize(dayTitleFormatter.format(date))}, ${dayDateFormatter.format(date)}`;
+      select.append(new Option(label, dateKey, task.date === dateKey, task.date === dateKey));
+    });
+  }
+
+  function closeTaskMoveModal() {
+    const modal = document.querySelector(".task-move-modal");
+
+    if (modal) {
+      modal.hidden = true;
+      delete modal.dataset.taskId;
+    }
+  }
+
   function bindTaskToggles() {
     document.addEventListener("click", (event) => {
       const toggleButton = event.target.closest(".task-toggle");
@@ -593,12 +932,27 @@
     });
   }
 
+  function bindViewportUpdates() {
+    window.addEventListener("resize", () => {
+      renderApp();
+
+      if (!isMobileViewport()) {
+        closeTaskMoveModal();
+      }
+    });
+  }
+
   function initApp() {
     loadState();
+    setDefaultMobileDayForCurrentWeek();
     bindWeekNavigation();
     bindQuickAdd();
     bindMonthGoals();
+    bindDesktopDragAndDrop();
     bindTaskToggles();
+    bindMobileTabs();
+    bindMobileTaskMenu();
+    bindViewportUpdates();
     renderApp();
     logCurrentWeekRange();
   }
@@ -609,6 +963,7 @@
   window.addMonthGoal = addMonthGoal;
   window.deleteMonthGoal = deleteMonthGoal;
   window.toggleTaskStatus = toggleTaskStatus;
+  window.moveTask = moveTask;
 
   document.addEventListener("DOMContentLoaded", initApp);
 })();

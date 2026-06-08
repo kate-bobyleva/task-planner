@@ -57,7 +57,7 @@
 
     <main class="main-grid">
       <aside class="sidebar-column" aria-label="Боковая панель планировщика">
-        <section class="panel goals-panel" aria-labelledby="goals-title">
+        <section class="panel goals-panel" data-mobile-screen="goals" aria-labelledby="goals-title">
           <div class="panel-header">
             <h2 id="goals-title">Цели месяца</h2>
             <span id="goals-count" class="muted-count">0</span>
@@ -72,7 +72,7 @@
           <ul id="month-goals-list" class="goal-list" aria-live="polite"></ul>
         </section>
 
-        <section class="panel inbox-panel" aria-labelledby="inbox-title">
+        <section class="panel inbox-panel" data-mobile-screen="inbox" aria-labelledby="inbox-title">
           <div class="panel-header">
             <h2 id="inbox-title">Входящие</h2>
             <span id="inbox-count" class="muted-count">0</span>
@@ -82,7 +82,7 @@
         </section>
       </aside>
 
-      <section class="planner-panel" aria-labelledby="planner-title">
+      <section class="planner-panel" data-mobile-screen="plan" aria-labelledby="planner-title">
         <div class="panel-header planner-heading">
           <h2 id="planner-title">План недели</h2>
           <span id="week-status" class="week-status">0 задач · 0%</span>
@@ -279,14 +279,21 @@
           </article>
         </div>
       </section>
+
+      <section class="panel mobile-stats-panel" data-mobile-screen="stats" aria-labelledby="stats-title">
+        <div class="panel-header">
+          <h2 id="stats-title">Статистика</h2>
+          <span class="muted-count">0%</span>
+        </div>
+      </section>
     </main>
   </div>
 
   <nav class="mobile-tabbar" aria-label="Нижнее меню">
-    <button type="button">Цели</button>
-    <button class="active" type="button">План</button>
-    <button type="button">Входящие</button>
-    <button type="button">Статистика</button>
+    <button type="button" data-mobile-tab="goals">Цели</button>
+    <button class="active" type="button" data-mobile-tab="plan">План</button>
+    <button type="button" data-mobile-tab="inbox">Входящие</button>
+    <button type="button" data-mobile-tab="stats">Статистика</button>
   </nav>
 
   <script src="script.js"></script>

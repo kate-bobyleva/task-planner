@@ -11,6 +11,7 @@
   let draggedTaskId = null;
   let activeMobileTab = "plan";
   let selectedMobileDayIndex = 0;
+  let lastCheckedDateKey = formatDateKey(new Date());
 
   const dayTitleFormatter = new Intl.DateTimeFormat("ru-RU", {
     weekday: "long",
@@ -264,6 +265,18 @@
     );
   }
 
+  function getCurrentWeekDateKeys() {
+    return getWeekDates(currentWeekStart).map(formatDateKey);
+  }
+
+  function getPendingTasksForCurrentWeek() {
+    const weekDateKeys = new Set(getCurrentWeekDateKeys());
+
+    return appState.tasks.filter(
+      (task) => task.status === "pending" && task.date && weekDateKeys.has(task.date),
+    );
+  }
+
   function renderWeekHeaders() {
     const weekDates = getWeekDates(currentWeekStart);
     const dayColumns = document.querySelectorAll("[data-day-index]");
@@ -507,7 +520,23 @@
     renderInboxTasks();
     renderWeekTasks();
     renderMobileDaySlider();
+    updateTransferWeekButton();
     applyMobileTab(activeMobileTab);
+  }
+
+  function updateTransferWeekButton() {
+    const transferButton = document.querySelector("#transfer-week-button");
+
+    if (!transferButton) {
+      return;
+    }
+
+    const pendingCount = getPendingTasksForCurrentWeek().length;
+    transferButton.disabled = pendingCount === 0;
+    transferButton.textContent =
+      pendingCount > 0
+        ? `Перенести невыполненные задачи на следующую неделю (${pendingCount})`
+        : "Перенести невыполненные задачи на следующую неделю";
   }
 
   function addMonthGoal(text) {
@@ -555,6 +584,70 @@
     exposeState();
     saveState();
     renderApp();
+  }
+
+  function autoTransferOverdueTasks() {
+    const todayKey = formatDateKey(new Date());
+    let hasTransferredTasks = false;
+
+    appState.tasks.forEach((task) => {
+      if (task.status === "pending" && task.date && task.date < todayKey) {
+        task.date = todayKey;
+        task.isTransferred = true;
+        hasTransferredTasks = true;
+      }
+    });
+
+    lastCheckedDateKey = todayKey;
+
+    if (!hasTransferredTasks) {
+      return;
+    }
+
+    if (!getCurrentWeekDateKeys().includes(todayKey)) {
+      currentWeekStart = getStartOfWeek(new Date());
+      setDefaultMobileDayForCurrentWeek();
+    }
+    exposeState();
+    saveState();
+    renderApp();
+  }
+
+  function startDateChangeWatcher() {
+    autoTransferOverdueTasks();
+
+    window.setInterval(() => {
+      const todayKey = formatDateKey(new Date());
+
+      if (todayKey !== lastCheckedDateKey) {
+        autoTransferOverdueTasks();
+      }
+    }, 60 * 1000);
+  }
+
+  function transferPendingTasksToNextWeek() {
+    const pendingTasks = getPendingTasksForCurrentWeek();
+
+    if (!pendingTasks.length) {
+      updateTransferWeekButton();
+      return;
+    }
+
+    const nextWeekMonday = addDays(currentWeekStart, WEEK_LENGTH);
+    const nextWeekMondayKey = formatDateKey(nextWeekMonday);
+
+    pendingTasks.forEach((task) => {
+      task.date = nextWeekMondayKey;
+      task.timeBlock = "morning";
+      task.isTransferred = true;
+    });
+
+    currentWeekStart = nextWeekMonday;
+    selectedMobileDayIndex = 0;
+    exposeState();
+    saveState();
+    renderApp();
+    logCurrentWeekRange();
   }
 
   function getDropTargetData(element) {
@@ -739,6 +832,12 @@
 
     prevWeekButton?.addEventListener("click", () => shiftWeek(-1));
     nextWeekButton?.addEventListener("click", () => shiftWeek(1));
+  }
+
+  function bindTransferWeekButton() {
+    const transferButton = document.querySelector("#transfer-week-button");
+
+    transferButton?.addEventListener("click", transferPendingTasksToNextWeek);
   }
 
   function bindQuickAdd() {
@@ -946,6 +1045,7 @@
     loadState();
     setDefaultMobileDayForCurrentWeek();
     bindWeekNavigation();
+    bindTransferWeekButton();
     bindQuickAdd();
     bindMonthGoals();
     bindDesktopDragAndDrop();
@@ -953,6 +1053,7 @@
     bindMobileTabs();
     bindMobileTaskMenu();
     bindViewportUpdates();
+    startDateChangeWatcher();
     renderApp();
     logCurrentWeekRange();
   }

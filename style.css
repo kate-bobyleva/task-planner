@@ -372,6 +372,32 @@ ul {
   font-weight: 650;
 }
 
+.planner-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  min-width: 0;
+}
+
+.transfer-week-button {
+  min-height: 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.transfer-week-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  color: var(--muted);
+  background: var(--surface);
+}
+
 .muted-count,
 .week-status {
   color: var(--muted);
@@ -915,7 +941,21 @@ ul {
   }
 
   .planner-heading {
+    align-items: flex-start;
     margin-bottom: 12px;
+  }
+
+  .planner-actions {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .transfer-week-button {
+    width: min(100%, 220px);
+    min-height: 44px;
+    padding: 0 10px;
+    white-space: normal;
   }
 
   .mobile-day-slider {

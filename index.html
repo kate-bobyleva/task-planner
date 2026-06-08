@@ -85,7 +85,12 @@
       <section class="planner-panel" data-mobile-screen="plan" aria-labelledby="planner-title">
         <div class="panel-header planner-heading">
           <h2 id="planner-title">План недели</h2>
-          <span id="week-status" class="week-status">0 задач · 0%</span>
+          <div class="planner-actions">
+            <span id="week-status" class="week-status">0 задач · 0%</span>
+            <button id="transfer-week-button" class="transfer-week-button" type="button" disabled>
+              Перенести невыполненные задачи на следующую неделю
+            </button>
+          </div>
         </div>
 
         <div id="week-grid" class="week-grid" aria-live="polite">

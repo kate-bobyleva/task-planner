@@ -1,5 +1,7 @@
 (function () {
   const STORAGE_KEY = "weeklyPlannerState";
+  const IMPORT_BACKUP_KEY = "weeklyPlannerStateBeforeImport";
+  const EXPORT_SCHEMA_VERSION = 1;
   const WEEK_LENGTH = 7;
   const MAX_TEXT_LENGTH = 255;
   const VALID_TIME_BLOCKS = ["morning", "afternoon", "evening"];
@@ -181,6 +183,92 @@
 
     exposeState();
     return appState;
+  }
+
+  function createExportPayload() {
+    return {
+      app: "weekly-task-planner",
+      schemaVersion: EXPORT_SCHEMA_VERSION,
+      exportedAt: new Date().toISOString(),
+      state: normalizeState(appState),
+    };
+  }
+
+  function exportStateToFile() {
+    const payload = createExportPayload();
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = `weekly-planner-backup-${formatDateKey(new Date())}.json`;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showDataMessage("Данные экспортированы в JSON-файл.", "success");
+  }
+
+  function importStateFromFile(file) {
+    if (!file) {
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      try {
+        const parsedData = JSON.parse(String(reader.result || ""));
+        const importedState = extractImportedState(parsedData);
+
+        window.localStorage.setItem(
+          IMPORT_BACKUP_KEY,
+          JSON.stringify({
+            createdAt: new Date().toISOString(),
+            state: appState,
+          }),
+        );
+
+        appState = normalizeState(importedState);
+        exposeState();
+        saveState();
+        setDefaultMobileDayForCurrentWeek();
+        renderApp();
+        showDataMessage("Данные успешно импортированы.", "success");
+      } catch (error) {
+        console.warn("Не удалось импортировать данные.", error);
+        showDataMessage("Не удалось импортировать файл. Проверьте, что это корректный JSON экспорта.", "error");
+      }
+    };
+
+    reader.onerror = () => {
+      showDataMessage("Не удалось прочитать выбранный файл.", "error");
+    };
+
+    reader.readAsText(file);
+  }
+
+  function extractImportedState(parsedData) {
+    const importedState = parsedData?.state || parsedData;
+
+    if (!isValidImportedState(importedState)) {
+      throw new Error("Invalid planner backup structure");
+    }
+
+    return importedState;
+  }
+
+  function isValidImportedState(candidateState) {
+    return Boolean(
+      candidateState &&
+        typeof candidateState === "object" &&
+        Array.isArray(candidateState.monthGoals) &&
+        Array.isArray(candidateState.tasks) &&
+        candidateState.dayMetrics &&
+        typeof candidateState.dayMetrics === "object" &&
+        !Array.isArray(candidateState.dayMetrics),
+    );
   }
 
   function exposeState() {
@@ -925,6 +1013,25 @@
     warningElement.hidden = true;
   }
 
+  function showDataMessage(message, type = "success") {
+    const messageElement = document.querySelector("#data-message");
+
+    if (!messageElement) {
+      return;
+    }
+
+    messageElement.textContent = message;
+    messageElement.dataset.type = type;
+    messageElement.hidden = false;
+
+    window.clearTimeout(showDataMessage.hideTimer);
+    showDataMessage.hideTimer = window.setTimeout(() => {
+      messageElement.hidden = true;
+      messageElement.textContent = "";
+      delete messageElement.dataset.type;
+    }, 5000);
+  }
+
   function logCurrentWeekRange() {
     const weekDates = getWeekDates(currentWeekStart);
     const firstDate = formatDateKey(weekDates[0]);
@@ -1052,6 +1159,19 @@
     const statsButton = document.querySelector("#emotion-stats-button");
 
     statsButton?.addEventListener("click", openEmotionStats);
+  }
+
+  function bindDataPortability() {
+    const exportButton = document.querySelector("#export-data-button");
+    const importButton = document.querySelector("#import-data-button");
+    const importInput = document.querySelector("#import-data-input");
+
+    exportButton?.addEventListener("click", exportStateToFile);
+    importButton?.addEventListener("click", () => importInput?.click());
+    importInput?.addEventListener("change", () => {
+      importStateFromFile(importInput.files?.[0]);
+      importInput.value = "";
+    });
   }
 
   function bindMobileTaskMenu() {
@@ -1376,6 +1496,7 @@
     bindTaskToggles();
     bindMobileTabs();
     bindEmotionStats();
+    bindDataPortability();
     bindMobileTaskMenu();
     bindDayMetricForms();
     bindViewportUpdates();
@@ -1386,6 +1507,8 @@
 
   window.saveState = saveState;
   window.loadState = loadState;
+  window.exportStateToFile = exportStateToFile;
+  window.importStateFromFile = importStateFromFile;
   window.createTask = createTask;
   window.addMonthGoal = addMonthGoal;
   window.deleteMonthGoal = deleteMonthGoal;

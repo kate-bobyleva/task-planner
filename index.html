@@ -22,6 +22,9 @@
           <button id="prev-week" class="icon-button" type="button" aria-label="Предыдущая неделя">&lt;</button>
           <button id="next-week" class="icon-button" type="button" aria-label="Следующая неделя">&gt;</button>
           <button id="emotion-stats-button" class="ghost-button" type="button">Статистика эмоций</button>
+          <button id="export-data-button" class="ghost-button data-button" type="button">Экспорт данных</button>
+          <button id="import-data-button" class="ghost-button data-button" type="button">Импорт данных</button>
+          <input id="import-data-input" type="file" accept="application/json,.json" hidden>
         </nav>
       </div>
 
@@ -53,6 +56,8 @@
 
         <button id="quick-add-button" class="primary-button" type="submit">Добавить</button>
       </form>
+
+      <p id="data-message" class="data-message" role="status" aria-live="polite" hidden></p>
     </header>
 
     <main class="main-grid">

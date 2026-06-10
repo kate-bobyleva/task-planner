@@ -185,6 +185,11 @@ ul {
   white-space: nowrap;
 }
 
+.data-button {
+  padding: 0 12px;
+  font-size: 13px;
+}
+
 .primary-button {
   padding: 0 18px;
   color: #ffffff;
@@ -243,6 +248,28 @@ ul {
 }
 
 .quick-add-warning[hidden] {
+  display: none;
+}
+
+.data-message {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--accent-dark);
+  background: var(--accent-soft);
+  font-size: 13px;
+}
+
+.data-message[data-type="error"] {
+  border-color: #f1c3c3;
+  color: var(--danger);
+  background: #fff4f4;
+}
+
+.data-message[hidden] {
   display: none;
 }
 
@@ -1074,6 +1101,18 @@ ul {
     content: "◎";
     color: var(--accent-dark);
     font-size: 20px;
+  }
+
+  .data-button {
+    width: auto;
+    min-width: 44px;
+    padding: 0 10px;
+    color: var(--accent-dark);
+    font-size: 12px;
+  }
+
+  .data-button::before {
+    content: none;
   }
 
   .quick-add {

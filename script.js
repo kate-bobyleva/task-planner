@@ -5,8 +5,8 @@
   const WEEK_LENGTH = 7;
   const MAX_TEXT_LENGTH = 255;
   const VALID_TIME_BLOCKS = ["morning", "afternoon", "evening"];
-  const MOBILE_QUERY = "(max-width: 767px)";
-  const DESKTOP_QUERY = "(min-width: 768px)";
+  const MOBILE_QUERY = "(max-width: 900px)";
+  const DESKTOP_QUERY = "(min-width: 901px)";
   const MAX_DAY_SUMMARY_LENGTH = 150;
   const MOOD_OPTIONS = [
     { value: "joy", label: "Радость", emoji: "😀" },

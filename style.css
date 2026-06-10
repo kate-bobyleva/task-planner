@@ -1053,7 +1053,7 @@ ul {
   }
 }
 
-@media (max-width: 767px) {
+@media (max-width: 900px) {
   body {
     padding-bottom: 0;
   }
@@ -1073,6 +1073,7 @@ ul {
 
   .header-top {
     align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .brand h1 {
@@ -1086,7 +1087,9 @@ ul {
   }
 
   .week-nav {
+    flex-wrap: wrap;
     gap: 4px;
+    max-width: 100%;
   }
 
   .ghost-button {
@@ -1343,6 +1346,37 @@ ul {
   .mobile-tabbar button.active {
     color: var(--accent-dark);
     background: var(--accent-soft);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 900px) {
+  .app-header {
+    gap: 12px;
+  }
+
+  .quick-add {
+    grid-template-columns: minmax(260px, 1fr) 145px 120px;
+  }
+
+  .quick-add .task-input,
+  .quick-add-main {
+    grid-column: auto;
+  }
+
+  .quick-add input[type="date"],
+  .quick-add select,
+  .quick-add input[id="task-project"] {
+    display: block;
+  }
+
+  .priority-toggle {
+    display: inline-flex;
+    grid-column: span 1;
+  }
+
+  .quick-add .primary-button {
+    grid-column: auto;
+    width: auto;
   }
 }
 
